@@ -110,6 +110,7 @@ class DocumentMetadata(BaseModel):
     """
     Metadata for uploaded documents
     """
+    document_id: str
     filename: str
     file_type: str
     file_size: int

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
@@ -239,30 +240,41 @@ async def rag_health_check(db: Session = Depends(get_db)):
     """
     try:
         from database.crud import DocumentCRUD, ChunkCRUD
-        
+        from config import settings
+
+        # Check database connection
+        database_connection = True
+        try:
+            db.execute(text("SELECT 1"))
+        except:
+            database_connection = False
+
+        # Check OpenAI configuration
+        openai_configured = bool(settings.openai_api_key)
+
         # Check document availability
         total_docs = DocumentCRUD.count_documents(db, status='completed')
         total_chunks = ChunkCRUD.count_chunks(db)
         chunks_with_embeddings = ChunkCRUD.count_chunks_with_embeddings(db)
-        
+
+        # Check if embeddings are ready
+        embedding_ready = chunks_with_embeddings > 0
+
         is_ready = (
+            database_connection and
+            openai_configured and
             total_docs > 0 and
             chunks_with_embeddings > 0
         )
-        
+
         return {
-            "status": "ready" if is_ready else "not_ready",
-            "rag_enabled": is_ready,
-            "statistics": {
-                "total_documents": total_docs,
-                "total_chunks": total_chunks,
-                "chunks_with_embeddings": chunks_with_embeddings,
-                "searchable_percentage": round(
-                    (chunks_with_embeddings / total_chunks * 100) if total_chunks > 0 else 0,
-                    2
-                )
-            },
-            "message": "RAG system is ready" if is_ready else "Upload documents to enable RAG",
+            "status": "healthy" if is_ready else "not_ready",
+            "database_connection": database_connection,
+            "openai_configured": openai_configured,
+            "embedding_ready": embedding_ready,
+            "total_documents": total_docs,
+            "total_chunks": total_chunks,
+            "indexed_chunks": chunks_with_embeddings,
             "timestamp": datetime.utcnow().isoformat()
         }
         

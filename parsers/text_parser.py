@@ -10,7 +10,24 @@ class TextParser:
     """
     Parser for plain text files
     """
-    
+
+    @staticmethod
+    def _sanitize_text(text: str) -> str:
+        """
+        Remove NUL characters and other problematic characters from text
+
+        Args:
+            text: Input text
+
+        Returns:
+            Sanitized text safe for PostgreSQL
+        """
+        # Remove NUL characters (0x00)
+        text = text.replace('\x00', '')
+        # Remove other control characters except newlines and tabs
+        text = ''.join(char for char in text if char == '\n' or char == '\t' or ord(char) >= 32)
+        return text
+
     async def parse(self, file_path: Path) -> Dict:
         """
         Parse a text file and extract its content
@@ -27,7 +44,10 @@ class TextParser:
             # Read file content
             async with aiofiles.open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 content = await f.read()
-            
+
+            # Sanitize text to remove problematic characters
+            content = self._sanitize_text(content)
+
             # Extract basic metadata
             metadata = self._extract_metadata(content, file_path)
             

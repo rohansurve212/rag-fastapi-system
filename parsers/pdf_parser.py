@@ -13,13 +13,30 @@ class PDFParser:
     """
     Parser for PDF files with OCR support
     """
-    
+
     def __init__(self):
         """
         Initialize PDF parser
         """
         self.use_ocr = True
         logger.info("PDF Parser initialized with OCR support")
+
+    @staticmethod
+    def _sanitize_text(text: str) -> str:
+        """
+        Remove NUL characters and other problematic characters from text
+
+        Args:
+            text: Input text
+
+        Returns:
+            Sanitized text safe for PostgreSQL
+        """
+        # Remove NUL characters (0x00)
+        text = text.replace('\x00', '')
+        # Remove other control characters except newlines and tabs
+        text = ''.join(char for char in text if char == '\n' or char == '\t' or ord(char) >= 32)
+        return text
     
     
     async def parse(self, file_path: Path, use_ocr: bool = True) -> Dict:
@@ -50,7 +67,10 @@ class PDFParser:
                     metadata["extraction_method"] = "text"
             else:
                 metadata["extraction_method"] = "text"
-            
+
+            # Sanitize text to remove problematic characters
+            content = self._sanitize_text(content)
+
             result = {
                 "content": content,
                 "metadata": metadata,

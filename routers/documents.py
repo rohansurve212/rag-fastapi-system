@@ -91,6 +91,7 @@ async def upload_document(
                 file_hash=existing_doc.file_hash,
                 chunks_created=existing_doc.chunk_count or 0,
                 metadata=DocumentMetadata(
+                    document_id=existing_doc.document_id,
                     filename=existing_doc.filename,
                     file_type=existing_doc.file_type,
                     file_size=existing_doc.file_size,
@@ -152,6 +153,7 @@ async def upload_document(
         
         # Step 7: Create metadata response
         doc_metadata = DocumentMetadata(
+            document_id=document.document_id,
             filename=document.filename,
             file_type=document.file_type,
             file_size=document.file_size,
@@ -214,6 +216,7 @@ async def list_documents(
         doc_list = []
         for doc in documents:
             doc_list.append(DocumentMetadata(
+                document_id=doc.document_id,
                 filename=doc.filename,
                 file_type=doc.file_type,
                 file_size=doc.file_size,
@@ -264,6 +267,7 @@ async def get_document(
             )
         
         doc_metadata = DocumentMetadata(
+            document_id=document.document_id,
             filename=document.filename,
             file_type=document.file_type,
             file_size=document.file_size,
